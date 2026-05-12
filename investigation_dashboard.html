@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forensic Interview System — CID Investigation Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy: #0B1D3A;
+  --navy2: #152D56;
+  --navy3: #1E3F7A;
+  --gold: #F5A623;
+  --gold2: #FFC84A;
+  --red: #E63946;
+  --red-bg: #FEE8E9;
+  --amber: #F4811F;
+  --amber-bg: #FEF0E2;
+  --green: #0B9E6A;
+  --green-bg: #E0F7EF;
+  --blue: #2563EB;
+  --blue-bg: #EBF2FF;
+  --purple: #7C3AED;
+  --purple-bg: #F0EBFF;
+  --pink: #DB2777;
+  --pink-bg: #FDE8F2;
+  --teal: #0891B2;
+  --teal-bg: #E0F5FA;
+  --gray: #6B7280;
+  --gray-bg: #F3F4F6;
+  --border: #E5E7EB;
+  --bg: #F0F4FF;
+  --white: #FFFFFF;
+  --text: #0F172A;
+  --text2: #475569;
+  --text3: #94A3B8;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+  --shadow: 0 4px 12px rgba(0,0,0,.08), 0 1px 3px rgba(0,0,0,.05);
+  --shadow-lg: 0 10px 30px rgba(0,0,0,.12);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-xs: 6px;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 14px;
+}
+
+/* ─── SCREENS ─────────────────────────────────────────── */
+.screen { display: none; min-height: 100vh; }
+.screen.active { display: block; }
+
+/* ─── HEADER STRIPE ───────────────────────────────────── */
+.hdr {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 50%, var(--navy3) 100%);
+  padding: 0 28px;
+  display: flex; align-items: center; gap: 12px;
+  height: 58px; position: sticky; top: 0; z-index: 200;
+  box-shadow: 0 2px 12px rgba(0,0,0,.25);
+}
+.hdr-logo {
+  width: 38px; height: 38px; background: var(--gold);
+  border-radius: 9px; display: flex; align-items: center;
+  justify-content: center; font-size: 20px; flex-shrink: 0;
+}
+.hdr-title { color: #fff; font-weight: 700; font-size: 15px; }
+.hdr-sub { color: #93B4D8; font-size: 11px; margin-top: 1px; }
+.hdr-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.hdr-pill {
+  background: rgba(255,255,255,.12); color: #fff;
+  border: 1px solid rgba(255,255,255,.2); border-radius: 7px;
+  padding: 6px 12px; font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: inherit; transition: background .15s;
+}
+.hdr-pill:hover { background: rgba(255,255,255,.2); }
+.hdr-pill.gold { background: var(--gold); color: var(--navy); border-color: var(--gold2); }
+.hdr-pill.gold:hover { background: var(--gold2); }
+.hdr-pill.green { background: #0B9E6A; color: #fff; border-color: #059669; }
+
+/* ─── BUTTONS ─────────────────────────────────────────── */
+.btn {
+  font-family: inherit; cursor: pointer; border: none; border-radius: var(--radius-sm);
+  font-weight: 600; transition: transform .1s, box-shadow .1s;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.btn:active { transform: scale(.97); }
+.btn-navy { background: var(--navy); color: #fff; padding: 11px 22px; font-size: 13px; box-shadow: 0 2px 8px rgba(11,29,58,.3); }
+.btn-navy:hover { background: var(--navy2); box-shadow: 0 4px 14px rgba(11,29,58,.4); }
+.btn-gold { background: var(--gold); color: var(--navy); padding: 10px 20px; font-size: 13px; box-shadow: 0 2px 8px rgba(245,166,35,.3); }
+.btn-gold:hover { background: var(--gold2); }
+.btn-red { background: var(--red); color: #fff; padding: 9px 18px; font-size: 12px; }
+.btn-red:hover { background: #C1121F; }
+.btn-green { background: var(--green); color: #fff; padding: 9px 18px; font-size: 12px; box-shadow: 0 2px 8px rgba(11,158,106,.25); }
+.btn-green:hover { background: #078055; }
+.btn-blue { background: var(--blue); color: #fff; padding: 9px 18px; font-size: 12px; }
+.btn-ghost { background: #fff; color: var(--text2); border: 1.5px solid var(--border); padding: 9px 16px; font-size: 12px; }
+.btn-ghost:hover { border-color: #CBD5E1; background: #F8FAFC; }
+.btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+
+/* ─── BADGES ──────────────────────────────────────────── */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10px; font-weight: 700; letter-spacing: .4px;
+  padding: 2px 9px; border-radius: 20px; white-space: nowrap;
+}
+.badge-critical { background: #FEE2E2; color: #991B1B; }
+.badge-high     { background: #FEF3C7; color: #92400E; }
+.badge-medium   { background: #DBEAFE; color: #1E40AF; }
+.badge-cc  { background: #EDE9FE; color: #5B21B6; }
+.badge-ji  { background: #FCE7F3; color: #9D174D; }
+.badge-pfir{ background: #FEE2E2; color: #991B1B; }
+.badge-di  { background: #D1FAE5; color: #065F46; }
+.badge-analysed { background: #D1FAE5; color: #065F46; }
+
+/* ─── STAT CARDS ──────────────────────────────────────── */
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.stat-card {
+  background: #fff; border-radius: var(--radius); padding: 18px 20px;
+  box-shadow: var(--shadow-sm); border-top: 3px solid transparent;
+  transition: box-shadow .2s;
+}
+.stat-card:hover { box-shadow: var(--shadow); }
+.stat-card .lbl { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text3); margin-bottom: 8px; }
+.stat-card .val { font-size: 30px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+.stat-card .sub { font-size: 11px; color: var(--text3); }
+.stat-card.blue  { border-top-color: var(--blue);   } .stat-card.blue  .val { color: var(--blue); }
+.stat-card.purple{ border-top-color: var(--purple);  } .stat-card.purple .val { color: var(--purple); }
+.stat-card.gold  { border-top-color: var(--gold);   } .stat-card.gold  .val { color: var(--amber); }
+.stat-card.red   { border-top-color: var(--red);    } .stat-card.red   .val { color: var(--red); }
+.stat-card.green { border-top-color: var(--green);  } .stat-card.green .val { color: var(--green); }
+
+/* ─── HOME SCREEN ─────────────────────────────────────── */
+.home-hero {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 55%, #1A4B8C 100%);
+  padding: 36px 32px 32px; margin-bottom: 0;
+}
+.home-hero-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 30px; color: #fff; margin-bottom: 6px;
+}
+.home-hero-sub { color: #93B4D8; font-size: 13px; }
+.home-hero-tags { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+.hero-tag {
+  background: rgba(255,255,255,.1); color: #C9DEFF;
+  border: 1px solid rgba(255,255,255,.15); border-radius: 20px;
+  font-size: 11px; font-weight: 600; padding: 3px 12px;
+}
+.home-body { padding: 28px 32px; }
+
+/* ─── RECORDS TABLE ───────────────────────────────────── */
+.card {
+  background: #fff; border-radius: var(--radius); padding: 22px 24px;
+  box-shadow: var(--shadow-sm); margin-bottom: 16px;
+}
+.card-title {
+  font-size: 11px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--text3); margin-bottom: 16px;
+  display: flex; align-items: center; gap: 8px;
+}
+.card-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.record-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 0; border-bottom: 1px solid #F8FAFC;
+}
+.record-row:last-child { border-bottom: none; padding-bottom: 0; }
+.rec-avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--blue-bg), #BFDBFE);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; color: var(--navy2); font-size: 14px; flex-shrink: 0;
+  border: 2px solid #BFDBFE;
+}
+.rec-name { font-weight: 700; font-size: 14px; color: var(--text); }
+.rec-meta { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.prog-wrap { display: flex; align-items: center; gap: 8px; margin-top: 7px; }
+.prog-bar { flex: 1; height: 5px; background: #EEF2FF; border-radius: 3px; overflow: hidden; }
+.prog-fill { height: 100%; border-radius: 3px; transition: width .4s ease; }
+.prog-fill.ok { background: linear-gradient(90deg, var(--blue), #60A5FA); }
+.prog-fill.warn { background: linear-gradient(90deg, var(--red), #F87171); }
+.rec-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+/* ─── NEW SESSION FORM ────────────────────────────────── */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 12px; align-items: end; }
+.form-group label {
+  font-size: 10px; font-weight: 700; letter-spacing: .8px;
+  text-transform: uppercase; color: var(--text3); display: block; margin-bottom: 6px;
+}
+.form-group input {
+  width: 100%; padding: 10px 13px;
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  font-family: inherit; font-size: 13px; color: var(--text); outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.form-group input:focus {
+  border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+}
+
+/* ─── INTERVIEW SCREEN ────────────────────────────────── */
+.interview-layout { display: grid; grid-template-columns: 220px 1fr; height: calc(100vh - 58px); }
+
+.sidebar {
+  background: linear-gradient(180deg, var(--navy) 0%, var(--navy2) 100%);
+  padding: 20px 0; overflow-y: auto;
+}
+.sidebar-label {
+  font-size: 9px; font-weight: 700; letter-spacing: 2px;
+  color: #5B82B0; padding: 0 18px; margin-bottom: 10px; text-transform: uppercase;
+}
+.sidebar-btn {
+  width: 100%; text-align: left; background: transparent; color: #7EAAD4;
+  border: none; border-left: 3px solid transparent; padding: 11px 18px;
+  cursor: pointer; font-family: inherit; font-size: 12px; font-weight: 500;
+  display: flex; justify-content: space-between; align-items: center;
+  transition: background .15s, color .15s;
+}
+.sidebar-btn:hover { background: rgba(255,255,255,.06); color: #C9DEFF; }
+.sidebar-btn.active {
+  background: rgba(245,166,35,.12); color: #fff;
+  border-left-color: var(--gold); font-weight: 700;
+}
+.sidebar-count {
+  font-size: 10px; font-weight: 700; padding: 1px 7px;
+  border-radius: 10px; transition: background .15s, color .15s;
+}
+.sidebar-btn.active .sidebar-count { background: var(--gold); color: var(--navy); }
+.sidebar-btn:not(.active) .sidebar-count { background: rgba(255,255,255,.08); color: #7EAAD4; }
+
+.sidebar-divider { height: 1px; background: rgba(255,255,255,.07); margin: 12px 18px; }
+.sidebar-stats { padding: 12px 18px; }
+.sidebar-stat-label { font-size: 9px; color: #5B82B0; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 3px; }
+.sidebar-stat-val { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+.sidebar-flag-row { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #7EAAD4; margin-bottom: 4px; }
+.flag-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+.q-panel { padding: 24px; overflow-y: auto; background: var(--bg); }
+.q-panel-top { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+.q-count-text { font-size: 12px; color: var(--text3); }
+
+/* ─── QUESTION CARDS ──────────────────────────────────── */
+.q-card {
+  background: #fff; border-radius: var(--radius); margin-bottom: 10px;
+  box-shadow: var(--shadow-sm); border: 1.5px solid var(--border);
+  overflow: hidden; transition: border-color .2s, box-shadow .2s;
+}
+.q-card.answered { border-color: #BFDBFE; }
+.q-card.flagged-contradiction { border-color: #FCA5A5; }
+.q-card.flagged-evasion { border-color: #FCD34D; }
+.q-card.flagged-clear { border-color: #6EE7B7; }
+.q-card.flagged-incomplete { border-color: #C4B5FD; }
+.q-card:hover { box-shadow: var(--shadow); }
+
+.q-header {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 16px; cursor: pointer; user-select: none;
+}
+.q-num {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px;
+  background: var(--gray-bg); color: var(--text3);
+  transition: background .2s, color .2s;
+}
+.q-num.answered { background: var(--blue-bg); color: var(--blue); }
+.q-num.contradiction { background: #FEE2E2; color: var(--red); }
+.q-num.evasion { background: #FEF3C7; color: var(--amber); }
+.q-num.clear { background: #D1FAE5; color: var(--green); }
+.q-num.incomplete { background: #EDE9FE; color: var(--purple); }
+
+.q-badges { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 5px; }
+.q-text { font-size: 13px; color: var(--text); line-height: 1.55; flex: 1; }
+.q-chevron { font-size: 14px; color: var(--text3); flex-shrink: 0; margin-top: 3px; transition: transform .2s; }
+.q-card.open .q-chevron { transform: rotate(180deg); }
+
+.q-body {
+  display: none; padding: 0 16px 16px 54px;
+  border-top: 1px solid #F0F4FF; background: #FAFBFF;
+}
+.q-card.open .q-body { display: block; }
+.q-body-hint {
+  font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase;
+  color: var(--text3); margin: 11px 0 7px;
+}
+.q-body textarea {
+  width: 100%; padding: 10px 12px; min-height: 80px; resize: vertical;
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  font-family: inherit; font-size: 13px; color: var(--text); outline: none;
+  background: #fff; transition: border-color .2s;
+  line-height: 1.6;
+}
+.q-body textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.08); }
+.flag-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
+.flag-label { font-size: 10px; font-weight: 700; letter-spacing: .5px; color: var(--text3); margin-right: 2px; text-transform: uppercase; }
+.flag-btn {
+  font-family: inherit; font-size: 11px; font-weight: 600; padding: 4px 12px;
+  border-radius: 20px; border: 1.5px solid var(--border); background: #fff;
+  color: var(--text3); cursor: pointer; transition: all .15s;
+}
+.flag-btn:hover { border-color: #CBD5E1; background: #F8FAFC; }
+.flag-btn.active-contradiction { background: #FEE2E2; color: var(--red); border-color: #FCA5A5; font-weight: 700; }
+.flag-btn.active-evasion { background: #FEF3C7; color: #92400E; border-color: #FCD34D; font-weight: 700; }
+.flag-btn.active-clear { background: #D1FAE5; color: var(--green); border-color: #6EE7B7; font-weight: 700; }
+.flag-btn.active-incomplete { background: #EDE9FE; color: var(--purple); border-color: #C4B5FD; font-weight: 700; }
+.q-timestamp { font-size: 10px; color: var(--text3); margin-top: 7px; }
+
+/* ─── RESULTS SCREEN ──────────────────────────────────── */
+.results-body { padding: 28px 32px; max-width: 1000px; margin: 0 auto; }
+
+.analysis-card {
+  background: #fff; border-radius: var(--radius); padding: 24px;
+  box-shadow: var(--shadow-sm); border: 1.5px solid #FCD34D; margin-bottom: 18px;
+}
+.analysis-loading {
+  background: linear-gradient(135deg, #F0F7FF, #EEF2FF);
+  border-radius: var(--radius); padding: 36px; text-align: center;
+  border: 1.5px dashed #BFDBFE; margin-bottom: 18px;
+}
+.analysis-empty {
+  background: #fff; border-radius: var(--radius); padding: 36px;
+  text-align: center; box-shadow: var(--shadow-sm); margin-bottom: 18px;
+}
+.analysis-icon { font-size: 44px; margin-bottom: 12px; }
+.analysis-heading { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.analysis-sub { font-size: 13px; color: var(--text2); margin-bottom: 22px; line-height: 1.6; }
+
+.analysis-text { font-size: 13px; color: #1C1917; line-height: 1.85; white-space: pre-wrap; }
+.analysis-section-head { font-weight: 700; color: var(--navy2); font-size: 13px; margin-top: 14px; margin-bottom: 2px; }
+
+.qa-review-item { padding: 14px 0; border-bottom: 1px solid #F0F4FF; }
+.qa-review-item:last-child { border-bottom: none; }
+.qa-answer {
+  font-size: 12px; background: #F8FAFC; border-radius: var(--radius-xs);
+  padding: 9px 12px; margin-top: 6px; color: var(--text2); line-height: 1.6;
+  font-style: italic;
+}
+.qa-answer.has-answer { color: var(--text); font-style: normal; }
+
+/* ─── PULSE ANIMATION ─────────────────────────────────── */
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+.pulse { animation: pulse 1.5s infinite; }
+
+/* ─── SCROLLBAR ───────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+
+/* ─── PRINT STYLES ────────────────────────────────────── */
+@media print {
+  .hdr, .sidebar, .hdr-actions { display: none !important; }
+  .screen { display: block !important; }
+  .interview-layout { grid-template-columns: 1fr; }
+  .q-panel { padding: 0; }
+}
+
+/* ─── LOADING DOTS ────────────────────────────────────── */
+@keyframes dot { 0%,80%,100%{transform:scale(0)} 40%{transform:scale(1)} }
+.loading-dots span { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--blue); animation:dot 1.4s infinite ease-in-out both; margin: 0 3px; }
+.loading-dots span:nth-child(1){animation-delay:-.32s}
+.loading-dots span:nth-child(2){animation-delay:-.16s}
+
+/* ─── HIGHLIGHT COLORS ────────────────────────────────── */
+.highlight-red { color: var(--red); font-weight: 700; }
+.highlight-amber { color: var(--amber); font-weight: 700; }
+.highlight-green { color: var(--green); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ HOME SCREEN ═══════════════ -->
+<div id="screen-home" class="screen active">
+  <div class="hdr">
+    <div class="hdr-logo">⚖</div>
+    <div>
+      <div class="hdr-title">Forensic Interview System</div>
+      <div class="hdr-sub">Criminal Investigation Division — Hospital Jewellery Case</div>
+    </div>
+    <div class="hdr-actions">
+      <span id="home-live-badge" style="font-size:11px;color:#5B82B0">FIR Active</span>
+    </div>
+  </div>
+
+  <div class="home-hero">
+    <div class="home-hero-title">CID Investigation Dashboard</div>
+    <div class="home-hero-sub">Structured forensic interviewing · AI behavioural analysis · Full PDF export</div>
+    <div class="home-hero-tags">
+      <span class="hero-tag">🔒 Missing jewellery</span>
+      <span class="hero-tag">💉 Ketamine therapy incident</span>
+      <span class="hero-tag">📋 FIR filed</span>
+      <span class="hero-tag">🏥 Hospital nursing staff</span>
+      <span class="hero-tag">32 questions · 4 categories</span>
+    </div>
+  </div>
+
+  <div class="home-body">
+    <!-- Stat row -->
+    <div class="stat-grid" style="margin-bottom:20px">
+      <div class="stat-card blue">
+        <div class="lbl">Total Records</div>
+        <div class="val" id="stat-total">0</div>
+        <div class="sub">Interview sessions</div>
+      </div>
+      <div class="stat-card purple">
+        <div class="lbl">Questions</div>
+        <div class="val">32</div>
+        <div class="sub">Across 4 categories</div>
+      </div>
+      <div class="stat-card gold">
+        <div class="lbl">Analyses Run</div>
+        <div class="val" id="stat-analyses">0</div>
+        <div class="sub">AI reports generated</div>
+      </div>
+      <div class="stat-card red">
+        <div class="lbl">Contradictions</div>
+        <div class="val" id="stat-contradictions">0</div>
+        <div class="sub">Flagged total</div>
+      </div>
+    </div>
+
+    <!-- Existing records -->
+    <div class="card" id="records-card" style="display:none">
+      <div class="card-title">Recorded Interviews</div>
+      <div id="records-list"></div>
+    </div>
+
+    <!-- New session -->
+    <div class="card">
+      <div class="card-title">Start New Interview Session</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Full Name *</label>
+          <input id="inp-name" type="text" placeholder="Staff member's full name" />
+        </div>
+        <div class="form-group">
+          <label>Designation / Role</label>
+          <input id="inp-role" type="text" placeholder="e.g. Nursing Supervisor" />
+        </div>
+        <div class="form-group">
+          <label>Case ID *</label>
+          <input id="inp-caseid" type="text" placeholder="e.g. MJC-2024-001" />
+        </div>
+        <button class="btn btn-navy" id="btn-start" onclick="startInterview()">
+          Begin Interview →
+        </button>
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--text3)">
+        * Required fields. All data is stored in this session only and will not be transmitted until you run analysis.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ INTERVIEW SCREEN ═══════════════ -->
+<div id="screen-interview" class="screen">
+  <div class="hdr">
+    <div class="hdr-logo">⚖</div>
+    <div>
+      <div class="hdr-title" id="iv-hdr-name">—</div>
+      <div class="hdr-sub" id="iv-hdr-meta">—</div>
+    </div>
+    <div class="hdr-actions">
+      <span id="iv-progress-text" style="font-size:12px;color:#5B82B0">0/32 answered</span>
+      <div style="width:90px;height:5px;background:rgba(255,255,255,.15);border-radius:3px;overflow:hidden">
+        <div id="iv-progress-bar" style="height:100%;background:var(--gold);border-radius:3px;width:0%;transition:width .3s"></div>
+      </div>
+      <span id="iv-flag-count" style="font-size:11px;color:#F87171;font-weight:700;display:none">⚠ 0 contradictions</span>
+      <button class="hdr-pill" onclick="goHome()">← Home</button>
+      <button class="hdr-pill gold" onclick="goResults()">Analyse & Results →</button>
+    </div>
+  </div>
+
+  <div class="interview-layout">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-label">Filter by Category</div>
+      <button class="sidebar-btn active" id="sb-ALL" onclick="setTopic('ALL')">
+        <span>All Questions</span>
+        <span class="sidebar-count" id="sbcount-ALL">0/32</span>
+      </button>
+      <button class="sidebar-btn" id="sb-CC" onclick="setTopic('CC')">
+        <span>Command & Control</span>
+        <span class="sidebar-count" id="sbcount-CC">0/8</span>
+      </button>
+      <button class="sidebar-btn" id="sb-JI" onclick="setTopic('JI')">
+        <span>Jewellery Incident</span>
+        <span class="sidebar-count" id="sbcount-JI">0/8</span>
+      </button>
+      <button class="sidebar-btn" id="sb-PFIR" onclick="setTopic('PFIR')">
+        <span>Post-FIR Behaviour</span>
+        <span class="sidebar-count" id="sbcount-PFIR">0/8</span>
+      </button>
+      <button class="sidebar-btn" id="sb-DI" onclick="setTopic('DI')">
+        <span>Documentation</span>
+        <span class="sidebar-count" id="sbcount-DI">0/8</span>
+      </button>
+
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-stats">
+        <div class="sidebar-stat-label">Flags raised</div>
+        <div class="sidebar-flag-row"><div class="flag-dot" style="background:#E63946"></div><span id="sb-contradictions">0</span> contradictions</div>
+        <div class="sidebar-flag-row"><div class="flag-dot" style="background:#F4811F"></div><span id="sb-evasions">0</span> evasions</div>
+        <div class="sidebar-flag-row"><div class="flag-dot" style="background:#0B9E6A"></div><span id="sb-clear">0</span> clear answers</div>
+        <div class="sidebar-flag-row"><div class="flag-dot" style="background:#7C3AED"></div><span id="sb-incomplete">0</span> incomplete</div>
+      </div>
+    </div>
+
+    <!-- Questions panel -->
+    <div class="q-panel" id="q-panel">
+      <div class="q-panel-top">
+        <div class="q-count-text" id="q-count-text">Showing 32 questions — click any question to expand and record the response</div>
+        <div style="margin-left:auto;display:flex;gap:6px">
+          <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px" onclick="expandAll()">Expand All</button>
+          <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px" onclick="collapseAll()">Collapse All</button>
+        </div>
+      </div>
+      <div id="questions-container"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ RESULTS SCREEN ═══════════════ -->
+<div id="screen-results" class="screen">
+  <div class="hdr">
+    <div class="hdr-logo">⚖</div>
+    <div>
+      <div class="hdr-title" id="res-hdr-name">Analysis & Report</div>
+      <div class="hdr-sub" id="res-hdr-meta">—</div>
+    </div>
+    <div class="hdr-actions">
+      <button class="hdr-pill" onclick="goInterview()">← Interview</button>
+      <button class="hdr-pill" onclick="goHome()">← Home</button>
+      <button class="hdr-pill green" id="btn-export-pdf" onclick="exportPDF()">⬇ Export PDF</button>
+    </div>
+  </div>
+
+  <div class="results-body">
+    <!-- Stat row -->
+    <div class="stat-grid" style="margin-bottom:20px">
+      <div class="stat-card blue">
+        <div class="lbl">Answered</div>
+        <div class="val" id="res-answered">0/32</div>
+        <div class="sub">Questions recorded</div>
+      </div>
+      <div class="stat-card red">
+        <div class="lbl">Contradictions</div>
+        <div class="val" id="res-contradictions">0</div>
+        <div class="sub">Flagged</div>
+      </div>
+      <div class="stat-card gold">
+        <div class="lbl">Evasions</div>
+        <div class="val" id="res-evasions">0</div>
+        <div class="sub">Flagged</div>
+      </div>
+      <div class="stat-card green">
+        <div class="lbl">Clear Answers</div>
+        <div class="val" id="res-clear">0</div>
+        <div class="sub">Corroborated</div>
+      </div>
+    </div>
+
+    <!-- Analysis area -->
+    <div id="analysis-area"></div>
+
+    <!-- Full Q&A record -->
+    <div class="card" id="qa-review-card">
+      <div class="card-title">Full Interview Record</div>
+      <div id="qa-review-list"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════
+
+const QUESTIONS = [
+  // Command & Control
+  { id:'cc1', cat:'CC', sev:'critical', text:'Describe your exact chain of command on the day of the ketamine therapy session. Who reported to you, and who did you report to?' },
+  { id:'cc2', cat:'CC', sev:'critical', text:'Who gave the order to administer ketamine on that specific day? Was it scheduled in advance or an urgent clinical decision?' },
+  { id:'cc3', cat:'CC', sev:'critical', text:'Walk me through every staff member who had authorised access to that patient room in the 48 hours surrounding the therapy session.' },
+  { id:'cc4', cat:'CC', sev:'high',     text:'Were there any informal room entry instructions given verbally that are not reflected in the official log?' },
+  { id:'cc5', cat:'CC', sev:'high',     text:'Did you personally verify room security before and after the therapy session? If not, who was responsible for that?' },
+  { id:'cc6', cat:'CC', sev:'high',     text:'Was there a formal handover communication after the session? Who communicated what to whom, and how?' },
+  { id:'cc7', cat:'CC', sev:'high',     text:'If a staff member needed to re-enter that room after the procedure for any reason, would they need your authorisation? Was any such re-entry requested?' },
+  { id:'cc8', cat:'CC', sev:'critical', text:'Who had master or override access to that room? Was this access logged formally, or was it informal and undocumented?' },
+  // Jewellery Incident
+  { id:'ji1', cat:'JI', sev:'critical', text:'When was the last time you personally saw or noticed jewellery among the patient\'s belongings? Describe exactly what you saw and where it was located.' },
+  { id:'ji2', cat:'JI', sev:'high',     text:'Did any patient family member or visitor mention jewellery in your presence before the official complaint was raised?' },
+  { id:'ji3', cat:'JI', sev:'critical', text:'On the day of ketamine therapy, did you or anyone else in your presence move, touch, or relocate any of the patient\'s personal belongings?' },
+  { id:'ji4', cat:'JI', sev:'high',     text:'When the jewellery was reported missing, who was the first person you told? What was their exact reaction?' },
+  { id:'ji5', cat:'JI', sev:'critical', text:'The jewellery reappeared in the same room after the therapy day. In your professional opinion, how do you explain that?' },
+  { id:'ji6', cat:'JI', sev:'critical', text:'Were you present within the room during any period when the patient was sedated or had reduced awareness? What exactly happened during that window?' },
+  { id:'ji7', cat:'JI', sev:'critical', text:'Did you see anyone handle any object near the patient\'s bedside locker or personal storage area — even briefly, even with what appeared to be a clinical reason?' },
+  { id:'ji8', cat:'JI', sev:'medium',   text:'Have you ever, in any previous incident, observed jewellery or personal valuables go missing and then reappear in this ward or facility?' },
+  // Post-FIR Behaviour
+  { id:'pfir1', cat:'PFIR', sev:'critical', text:'When did you first become aware that a formal police complaint — an FIR — had been filed? How did you find out, and who exactly told you?' },
+  { id:'pfir2', cat:'PFIR', sev:'critical', text:'After the FIR was filed, did you contact any colleague privately — by phone, message, or in person — to discuss this matter? Who, and what was said?' },
+  { id:'pfir3', cat:'PFIR', sev:'high',     text:'Did your behaviour, communication patterns, or working routine change in any way after you learned about the FIR? If so, how?' },
+  { id:'pfir4', cat:'PFIR', sev:'critical', text:'Did any colleague ask you — directly or indirectly — to confirm, cover, or align your account of events with theirs?' },
+  { id:'pfir5', cat:'PFIR', sev:'critical', text:'Were you approached by anyone offering reassurance, instructions, or guidance about what to say during this investigation?' },
+  { id:'pfir6', cat:'PFIR', sev:'high',     text:'After the FIR, did you make any attempt to review, check, or verify documentation related to that day — nursing notes, logs, or rosters?' },
+  { id:'pfir7', cat:'PFIR', sev:'critical', text:'Did the reappearance of the jewellery surprise you? What was your exact, immediate reaction when you heard it had been found?' },
+  { id:'pfir8', cat:'PFIR', sev:'critical', text:'Is there anything you know — or suspect — about how or why the jewellery reappeared that you have not yet told investigators?' },
+  // Documentation Integrity
+  { id:'di1', cat:'DI', sev:'critical', text:'Were all entries in the duty log, nursing notes, and medication records for the therapy day made in real time — or were any made retrospectively?' },
+  { id:'di2', cat:'DI', sev:'critical', text:'After the complaint was raised, did you personally add to, correct, delete, or alter any documentation related to that day?' },
+  { id:'di3', cat:'DI', sev:'critical', text:'Do the timestamps in the nursing log exactly match the CCTV-visible entries and exits from the patient room? Would you be confident if we compared them side by side right now?' },
+  { id:'di4', cat:'DI', sev:'high',     text:'Were there any verbal handover instructions given on the therapy day that were intentionally not recorded in writing? If so, why not?' },
+  { id:'di5', cat:'DI', sev:'critical', text:'The medication preparation log should show who prepared, checked, and administered ketamine that day. Review that log with me now — does every name match the actual person present?' },
+  { id:'di6', cat:'DI', sev:'high',     text:'Were any duty roster entries — including shift swaps or informal coverage — undocumented or recorded only after the fact?' },
+  { id:'di7', cat:'DI', sev:'critical', text:'If I were to compare your nursing notes with the vitals chart and the CCTV record simultaneously, would there be any discrepancies? What would I find?' },
+  { id:'di8', cat:'DI', sev:'critical', text:'Has anyone — a senior, a colleague, or an external party — suggested changes to documentation or described what the records should say?' },
+];
+
+const CAT_LABELS = { CC:'Command & Control', JI:'Jewellery Incident', PFIR:'Post-FIR Behaviour', DI:'Documentation Integrity' };
+const CAT_BADGE = { CC:'badge-cc', JI:'badge-ji', PFIR:'badge-pfir', DI:'badge-di' };
+const SEV_LABEL = { critical:'Critical', high:'High', medium:'Medium' };
+const FLAGS = [
+  { key:'contradiction', label:'Contradiction', cls:'active-contradiction', dot:'#E63946' },
+  { key:'evasion',       label:'Evasion',        cls:'active-evasion',       dot:'#F4811F' },
+  { key:'clear',         label:'Clear',           cls:'active-clear',         dot:'#0B9E6A' },
+  { key:'incomplete',    label:'Incomplete',      cls:'active-incomplete',    dot:'#7C3AED' },
+];
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let DB = [];           // Array of records
+let activeId = null;   // Current record id
+let activeTopic = 'ALL';
+let resultsId = null;  // Which record is shown in results
+
+function getRecord(id) { return DB.find(r => r.id === id); }
+function getActive() { return getRecord(activeId); }
+
+// ═══════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+}
+
+function goHome() { refreshHome(); showScreen('home'); }
+
+function goInterview() {
+  if (!activeId) return;
+  activeTopic = 'ALL';
+  renderInterviewHeader();
+  renderSidebar();
+  renderQuestions();
+  showScreen('interview');
+}
+
+function goResults() {
+  resultsId = activeId;
+  renderResults();
+  showScreen('results');
+}
+
+// ═══════════════════════════════════════════════════════
+// HOME
+// ═══════════════════════════════════════════════════════
+function refreshHome() {
+  document.getElementById('stat-total').textContent = DB.length;
+  document.getElementById('stat-analyses').textContent = DB.filter(r => r.analysisResult).length;
+  let totalContradictions = 0;
+  DB.forEach(r => { totalContradictions += Object.values(r.answers).filter(a => a.flag === 'contradiction').length; });
+  document.getElementById('stat-contradictions').textContent = totalContradictions;
+
+  const listEl = document.getElementById('records-list');
+  const cardEl = document.getElementById('records-card');
+  if (DB.length === 0) { cardEl.style.display = 'none'; return; }
+  cardEl.style.display = 'block';
+
+  listEl.innerHTML = DB.map(rec => {
+    const ans = Object.values(rec.answers).filter(a => a.text && a.text.trim()).length;
+    const flags = Object.values(rec.answers).filter(a => a.flag === 'contradiction').length;
+    const pct = Math.round(ans / QUESTIONS.length * 100);
+    const initials = rec.name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+    return `<div class="record-row">
+      <div class="rec-avatar">${initials}</div>
+      <div style="flex:1">
+        <div class="rec-name">${rec.name}</div>
+        <div class="rec-meta">${rec.role} &nbsp;·&nbsp; ${rec.caseId} &nbsp;·&nbsp; ${new Date(rec.startedAt).toLocaleDateString('en-IN')}</div>
+        <div class="prog-wrap">
+          <div class="prog-bar"><div class="prog-fill ${flags>2?'warn':'ok'}" style="width:${pct}%"></div></div>
+          <span style="font-size:11px;color:var(--text3)">${ans}/${QUESTIONS.length}</span>
+          ${flags>0 ? `<span style="font-size:11px;color:var(--red);font-weight:700">⚠ ${flags}</span>` : ''}
+          ${rec.analysisResult ? '<span class="badge badge-analysed">Analysed</span>' : ''}
+        </div>
+      </div>
+      <div class="rec-actions">
+        <button class="btn btn-ghost" style="font-size:11px;padding:7px 13px" onclick="resumeRecord(${rec.id})">Resume</button>
+        <button class="btn ${rec.analysisResult?'btn-gold':'btn-ghost'}" style="font-size:11px;padding:7px 13px" onclick="openResults(${rec.id})">${rec.analysisResult?'View Report':'Results'}</button>
+        <button class="btn btn-green" style="font-size:11px;padding:7px 13px" onclick="exportPDFFor(${rec.id})">PDF ↓</button>
+        <button class="btn" style="font-size:11px;padding:7px 13px;background:#FEE2E2;color:var(--red)" onclick="deleteRecord(${rec.id})">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function resumeRecord(id) {
+  activeId = id;
+  activeTopic = 'ALL';
+  renderInterviewHeader();
+  renderSidebar();
+  renderQuestions();
+  showScreen('interview');
+}
+
+function openResults(id) {
+  activeId = id;
+  resultsId = id;
+  renderResults();
+  showScreen('results');
+}
+
+function deleteRecord(id) {
+  if (!confirm('Delete this interview record? This cannot be undone.')) return;
+  DB = DB.filter(r => r.id !== id);
+  refreshHome();
+}
+
+// ═══════════════════════════════════════════════════════
+// START INTERVIEW
+// ═══════════════════════════════════════════════════════
+function startInterview() {
+  const name = document.getElementById('inp-name').value.trim();
+  const role = document.getElementById('inp-role').value.trim() || 'Staff';
+  const caseId = document.getElementById('inp-caseid').value.trim();
+  if (!name || !caseId) { alert('Please enter the staff member\'s name and case ID.'); return; }
+
+  const rec = {
+    id: Date.now(),
+    name, role, caseId,
+    startedAt: new Date().toISOString(),
+    answers: {},
+    analysisResult: null,
+    analysisRunAt: null,
+  };
+  DB.push(rec);
+  activeId = rec.id;
+  activeTopic = 'ALL';
+  document.getElementById('inp-name').value = '';
+  document.getElementById('inp-role').value = '';
+  document.getElementById('inp-caseid').value = '';
+
+  renderInterviewHeader();
+  renderSidebar();
+  renderQuestions();
+  showScreen('interview');
+}
+
+// ═══════════════════════════════════════════════════════
+// INTERVIEW
+// ═══════════════════════════════════════════════════════
+function renderInterviewHeader() {
+  const rec = getActive(); if (!rec) return;
+  document.getElementById('iv-hdr-name').textContent = rec.name;
+  document.getElementById('iv-hdr-meta').textContent = `${rec.role} · ${rec.caseId}`;
+  updateProgress();
+}
+
+function updateProgress() {
+  const rec = getActive(); if (!rec) return;
+  const ans = Object.values(rec.answers).filter(a => a.text && a.text.trim()).length;
+  const flags = Object.values(rec.answers).filter(a => a.flag === 'contradiction').length;
+  const pct = Math.round(ans / QUESTIONS.length * 100);
+  document.getElementById('iv-progress-text').textContent = `${ans}/${QUESTIONS.length} answered`;
+  document.getElementById('iv-progress-bar').style.width = pct + '%';
+  const fc = document.getElementById('iv-flag-count');
+  if (flags > 0) { fc.style.display = ''; fc.textContent = `⚠ ${flags} contradiction${flags>1?'s':''}`; }
+  else { fc.style.display = 'none'; }
+
+  // Sidebar counts
+  const cats = ['CC','JI','PFIR','DI'];
+  const allAns = Object.values(rec.answers).filter(a => a.text && a.text.trim()).length;
+  document.getElementById('sbcount-ALL').textContent = `${allAns}/32`;
+  cats.forEach(cat => {
+    const total = QUESTIONS.filter(q => q.cat === cat).length;
+    const catAns = QUESTIONS.filter(q => q.cat === cat).filter(q => rec.answers[q.id]?.text?.trim()).length;
+    document.getElementById('sbcount-' + cat).textContent = `${catAns}/${total}`;
+  });
+
+  // Sidebar flag stats
+  document.getElementById('sb-contradictions').textContent = Object.values(rec.answers).filter(a=>a.flag==='contradiction').length;
+  document.getElementById('sb-evasions').textContent = Object.values(rec.answers).filter(a=>a.flag==='evasion').length;
+  document.getElementById('sb-clear').textContent = Object.values(rec.answers).filter(a=>a.flag==='clear').length;
+  document.getElementById('sb-incomplete').textContent = Object.values(rec.answers).filter(a=>a.flag==='incomplete').length;
+
+  refreshHome();
+}
+
+function setTopic(topic) {
+  activeTopic = topic;
+  document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('sb-' + topic).classList.add('active');
+  renderQuestions();
+}
+
+function renderSidebar() { updateProgress(); }
+
+function getFilteredQs() {
+  if (activeTopic === 'ALL') return QUESTIONS;
+  return QUESTIONS.filter(q => q.cat === activeTopic);
+}
+
+function renderQuestions() {
+  const rec = getActive(); if (!rec) return;
+  const qs = getFilteredQs();
+  document.getElementById('q-count-text').textContent = `Showing ${qs.length} question${qs.length!==1?'s':''} — click any question to expand and record the response`;
+
+  document.getElementById('questions-container').innerHTML = qs.map((q, idx) => {
+    const ans = rec.answers[q.id] || {};
+    const hasAns = !!(ans.text && ans.text.trim());
+    const flag = ans.flag || '';
+    const numCls = flag ? flag : (hasAns ? 'answered' : '');
+    const cardCls = flag ? `flagged-${flag}` : (hasAns ? 'answered' : '');
+    const flagBtns = FLAGS.map(f =>
+      `<button class="flag-btn ${ans.flag===f.key?f.cls:''}" data-qid="${q.id}" data-flag="${f.key}" onclick="toggleFlag(this)">${f.label}</button>`
+    ).join('');
+    const tstamp = ans.answeredAt ? `<div class="q-timestamp">Last updated: ${new Date(ans.answeredAt).toLocaleString('en-IN')}</div>` : '';
+    const statusBadge = flag
+      ? `<span class="badge" style="background:${FLAGS.find(f=>f.key===flag)?.dot+'22'};color:${FLAGS.find(f=>f.key===flag)?.dot}">${FLAGS.find(f=>f.key===flag)?.label}</span>`
+      : (hasAns ? '<span class="badge" style="background:#D1FAE5;color:#065F46">Recorded</span>' : '');
+    const catBadge = activeTopic==='ALL' ? `<span class="badge ${CAT_BADGE[q.cat]}">${CAT_LABELS[q.cat]}</span>` : '';
+
+    return `<div class="q-card ${cardCls}" id="qcard-${q.id}">
+      <div class="q-header" onclick="toggleQ('${q.id}')">
+        <div class="q-num ${numCls}">${idx+1}</div>
+        <div style="flex:1">
+          <div class="q-badges">
+            <span class="badge badge-${q.sev}">${SEV_LABEL[q.sev]}</span>
+            ${catBadge}
+            ${statusBadge}
+          </div>
+          <div class="q-text">${q.text}</div>
+        </div>
+        <div class="q-chevron">▼</div>
+      </div>
+      <div class="q-body">
+        <div class="q-body-hint">Record response verbatim or summarised</div>
+        <textarea id="ans-${q.id}" placeholder="Type the interviewee's answer here…" onchange="saveAnswer('${q.id}')" oninput="saveAnswer('${q.id}')">${ans.text||''}</textarea>
+        <div class="flag-row">
+          <span class="flag-label">Flag:</span>
+          ${flagBtns}
+        </div>
+        ${tstamp}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleQ(qid) {
+  const card = document.getElementById('qcard-' + qid);
+  card.classList.toggle('open');
+}
+
+function expandAll() {
+  getFilteredQs().forEach(q => {
+    document.getElementById('qcard-' + q.id)?.classList.add('open');
+  });
+}
+
+function collapseAll() {
+  getFilteredQs().forEach(q => {
+    document.getElementById('qcard-' + q.id)?.classList.remove('open');
+  });
+}
+
+function saveAnswer(qid) {
+  const rec = getActive(); if (!rec) return;
+  const val = document.getElementById('ans-' + qid)?.value || '';
+  if (!rec.answers[qid]) rec.answers[qid] = {};
+  rec.answers[qid].text = val;
+  rec.answers[qid].answeredAt = new Date().toISOString();
+  // Update card state
+  const card = document.getElementById('qcard-' + qid);
+  const hasAns = !!(val.trim());
+  const flag = rec.answers[qid].flag || '';
+  card.classList.toggle('answered', hasAns && !flag);
+  updateProgress();
+}
+
+function toggleFlag(btn) {
+  const rec = getActive(); if (!rec) return;
+  const qid = btn.dataset.qid;
+  const flag = btn.dataset.flag;
+  if (!rec.answers[qid]) rec.answers[qid] = {};
+  const current = rec.answers[qid].flag;
+  rec.answers[qid].flag = current === flag ? null : flag;
+  // Re-render just the flag buttons + card state
+  const card = document.getElementById('qcard-' + qid);
+  const newFlag = rec.answers[qid].flag;
+  const hasAns = !!(rec.answers[qid].text?.trim());
+  // Clear flag classes
+  card.classList.remove('flagged-contradiction','flagged-evasion','flagged-clear','flagged-incomplete','answered');
+  if (newFlag) card.classList.add('flagged-' + newFlag);
+  else if (hasAns) card.classList.add('answered');
+  // Update num
+  const num = card.querySelector('.q-num');
+  num.className = 'q-num' + (newFlag?' '+newFlag : (hasAns?' answered':''));
+  // Update flag buttons
+  card.querySelectorAll('.flag-btn').forEach(b => {
+    const f = FLAGS.find(f => f.key === b.dataset.flag);
+    b.className = 'flag-btn' + (b.dataset.flag === newFlag ? ' '+f.cls : '');
+  });
+  // Update status badge
+  const badges = card.querySelector('.q-badges');
+  const existingStatus = badges.querySelector('[data-role="status"]');
+  if (existingStatus) existingStatus.remove();
+  if (newFlag) {
+    const f = FLAGS.find(f => f.key === newFlag);
+    const span = document.createElement('span');
+    span.className = 'badge';
+    span.dataset.role = 'status';
+    span.style.background = f.dot + '22';
+    span.style.color = f.dot;
+    span.textContent = f.label;
+    badges.appendChild(span);
+  } else if (hasAns) {
+    const span = document.createElement('span');
+    span.className = 'badge';
+    span.dataset.role = 'status';
+    span.style.background = '#D1FAE5';
+    span.style.color = '#065F46';
+    span.textContent = 'Recorded';
+    badges.appendChild(span);
+  }
+  updateProgress();
+}
+
+// ═══════════════════════════════════════════════════════
+// RESULTS & ANALYSIS
+// ═══════════════════════════════════════════════════════
+function renderResults() {
+  const rec = getRecord(resultsId); if (!rec) return;
+  document.getElementById('res-hdr-name').textContent = `Analysis & Report — ${rec.name}`;
+  document.getElementById('res-hdr-meta').textContent = `${rec.role} · ${rec.caseId}`;
+
+  const ans = Object.values(rec.answers).filter(a => a.text?.trim()).length;
+  const contradictions = Object.values(rec.answers).filter(a => a.flag==='contradiction').length;
+  const evasions = Object.values(rec.answers).filter(a => a.flag==='evasion').length;
+  const clear = Object.values(rec.answers).filter(a => a.flag==='clear').length;
+
+  document.getElementById('res-answered').textContent = `${ans}/${QUESTIONS.length}`;
+  document.getElementById('res-contradictions').textContent = contradictions;
+  document.getElementById('res-evasions').textContent = evasions;
+  document.getElementById('res-clear').textContent = clear;
+
+  renderAnalysisArea(rec);
+  renderQAReview(rec);
+}
+
+function renderAnalysisArea(rec) {
+  const area = document.getElementById('analysis-area');
+  if (rec.analysisResult) {
+    area.innerHTML = `<div class="analysis-card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #FEF3C7">
+        <div style="font-size:24px">⚖</div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--text)">Forensic Behavioural Analysis</div>
+          <div style="font-size:11px;color:var(--text3)">Generated ${new Date(rec.analysisRunAt).toLocaleString('en-IN')}</div>
+        </div>
+        <button class="btn btn-ghost" style="margin-left:auto;font-size:11px;padding:6px 12px" onclick="runAnalysis()">Re-run Analysis</button>
+      </div>
+      <div class="analysis-text" id="analysis-text-content">${formatAnalysis(rec.analysisResult)}</div>
+    </div>`;
+  } else {
+    area.innerHTML = `<div class="analysis-empty">
+      <div class="analysis-icon">🔍</div>
+      <div class="analysis-heading">Generate Forensic Analysis</div>
+      <div class="analysis-sub">AI will analyse all recorded responses, identify behavioural patterns, score suspicion level, and produce an investigator's verdict based on senior CID methodology.</div>
+      <button class="btn btn-navy" id="btn-run-analysis" onclick="runAnalysis()" style="font-size:14px;padding:13px 32px">Run AI Forensic Analysis →</button>
+    </div>`;
+  }
+}
+
+function formatAnalysis(text) {
+  return text.split('\n').map(line => {
+    if (!line.trim()) return '<br>';
+    if (/^\d+\.\s/.test(line) || /^[A-Z][A-Z\s&']+:/.test(line) || /^\*\*/.test(line)) {
+      return `<div class="analysis-section-head">${line.replace(/\*\*/g,'')}</div>`;
+    }
+    return `<div style="margin-bottom:3px">${line}</div>`;
+  }).join('');
+}
+
+function renderQAReview(rec) {
+  document.getElementById('qa-review-list').innerHTML = QUESTIONS.map((q, idx) => {
+    const ans = rec.answers[q.id] || {};
+    const flag = FLAGS.find(f => f.key === ans.flag);
+    const hasAns = !!(ans.text?.trim());
+    return `<div class="qa-review-item">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:5px;align-items:center">
+        <span style="font-size:11px;font-weight:700;color:var(--text3)">Q${idx+1}</span>
+        <span class="badge badge-${q.sev}">${SEV_LABEL[q.sev]}</span>
+        <span class="badge ${CAT_BADGE[q.cat]}">${CAT_LABELS[q.cat]}</span>
+        ${flag ? `<span class="badge" style="background:${flag.dot}22;color:${flag.dot}">${flag.label}</span>` : ''}
+      </div>
+      <div style="font-size:13px;font-weight:600;color:var(--text);line-height:1.5;margin-bottom:5px">${q.text}</div>
+      <div class="qa-answer ${hasAns?'has-answer':''}">${ans.text?.trim() || 'No response recorded'}</div>
+    </div>`;
+  }).join('');
+}
+
+async function runAnalysis() {
+  const rec = getRecord(resultsId); if (!rec) return;
+  const area = document.getElementById('analysis-area');
+  area.innerHTML = `<div class="analysis-loading">
+    <div class="loading-dots" style="margin-bottom:14px"><span></span><span></span><span></span></div>
+    <div style="font-size:14px;font-weight:700;color:var(--navy2)">Analysing interview data…</div>
+    <div style="font-size:12px;color:var(--text3);margin-top:6px">Applying forensic behavioural analysis methodology. This may take 10–20 seconds.</div>
+  </div>`;
+
+  const ans = Object.values(rec.answers).filter(a => a.text?.trim()).length;
+  const contradictions = Object.values(rec.answers).filter(a => a.flag==='contradiction').length;
+  const transcript = QUESTIONS.map(q => {
+    const a = rec.answers[q.id] || {};
+    return `[${CAT_LABELS[q.cat]}] [${SEV_LABEL[q.sev]}]\nQ: ${q.text}\nA: ${a.text?.trim()||'(unanswered)'} | Flag: ${a.flag||'none'}`;
+  }).join('\n\n');
+
+  const prompt = `You are a senior criminal investigation detective, forensic interviewer, and behavioural analyst with 25+ years experience in hospital theft, internal staff investigations, and post-complaint fear behaviour analysis.
+
+CASE BACKGROUND: Jewellery went missing from a patient room in a hospital. The day before jewellery mysteriously reappeared, ketamine therapy was administered in the same room — creating a window of reduced patient awareness and normalised multi-staff room access. An FIR has been filed with police.
+
+SUBJECT: ${rec.name}
+ROLE: ${rec.role}
+CASE: ${rec.caseId}
+Interview session: ${new Date(rec.startedAt).toLocaleString('en-IN')}
+Questions answered: ${ans}/${QUESTIONS.length}
+Contradictions flagged by interviewer: ${contradictions}
+
+FULL INTERVIEW TRANSCRIPT:
+${transcript}
+
+Produce a comprehensive forensic analysis with these numbered sections:
+1. SUSPICION SCORE (0–100): State the score and provide explicit clinical reasoning tied to specific answers.
+2. CRITICAL RED FLAGS: List each specific answer that raises investigative concern. Explain why each is significant.
+3. BEHAVIOURAL PATTERN ASSESSMENT: What consistent patterns emerge across the full transcript? Compare early vs late answers.
+4. DECEPTION INDICATORS: Which responses show signs of rehearsal, evasion, selective memory, or strategic vagueness?
+5. KNOWLEDGE INDICATORS: Based on the answers, what does this person appear to have known, and when?
+6. TIMELINE GAPS: Identify specific windows or periods they cannot or will not account for.
+7. RECOMMENDED FOLLOW-UP: 3–5 precise, actionable next investigative steps specific to this subject.
+8. INVESTIGATOR'S VERDICT: One focused paragraph. Assess: single-person or team involvement? Fear-driven return or planned concealment? What is their probable level of knowledge or culpability? Be direct.
+
+Rules: Be clinical and evidence-anchored. Clearly distinguish confirmed fact from inference. Do not hedge where the evidence is clear.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+    rec.analysisResult = text;
+    rec.analysisRunAt = new Date().toISOString();
+  } catch(e) {
+    rec.analysisResult = 'Analysis failed — connection error. Please check your connection and try again.';
+    rec.analysisRunAt = new Date().toISOString();
+  }
+  renderAnalysisArea(rec);
+  refreshHome();
+}
+
+// ═══════════════════════════════════════════════════════
+// PDF EXPORT
+// ═══════════════════════════════════════════════════════
+function buildPDFHTML(rec) {
+  const ans = Object.values(rec.answers).filter(a => a.text?.trim()).length;
+  const contradictions = Object.values(rec.answers).filter(a => a.flag==='contradiction').length;
+  const evasions = Object.values(rec.answers).filter(a => a.flag==='evasion').length;
+  const clear = Object.values(rec.answers).filter(a => a.flag==='clear').length;
+  const now = new Date().toLocaleString('en-IN');
+
+  const qRows = QUESTIONS.map((q, idx) => {
+    const a = rec.answers[q.id] || {};
+    const flag = FLAGS.find(f => f.key === a.flag);
+    const sevBg = {critical:'#FEE2E2',high:'#FEF3C7',medium:'#DBEAFE'}[q.sev];
+    const sevColor = {critical:'#991B1B',high:'#92400E',medium:'#1E40AF'}[q.sev];
+    const catBg = {CC:'#EDE9FE',JI:'#FCE7F3',PFIR:'#FEE2E2',DI:'#D1FAE5'}[q.cat];
+    const catColor = {CC:'#5B21B6',JI:'#9D174D',PFIR:'#991B1B',DI:'#065F46'}[q.cat];
+    return `<div style="margin-bottom:16px;padding:14px;border:1px solid #E5E7EB;border-radius:8px;page-break-inside:avoid">
+      <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+        <span style="background:${sevBg};color:${sevColor};font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px">${SEV_LABEL[q.sev]}</span>
+        <span style="background:${catBg};color:${catColor};font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px">${CAT_LABELS[q.cat]}</span>
+        ${flag ? `<span style="background:${flag.dot}22;color:${flag.dot};font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px">${flag.label}</span>` : ''}
+        <span style="margin-left:auto;font-size:10px;color:#9CA3AF">Q${idx+1}</span>
+      </div>
+      <div style="font-size:12px;font-weight:700;color:#111827;margin-bottom:7px;line-height:1.5">${q.text}</div>
+      <div style="background:#F9FAFB;border-radius:6px;padding:10px 12px;font-size:12px;color:${a.text?.trim()?'#111827':'#9CA3AF'};min-height:36px;line-height:1.6;font-style:${a.text?.trim()?'normal':'italic'}">
+        ${a.text?.trim() || '(No response recorded)'}
+      </div>
+      ${a.answeredAt ? `<div style="font-size:10px;color:#9CA3AF;margin-top:5px">Recorded: ${new Date(a.answeredAt).toLocaleString('en-IN')}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<title>Investigation Report — ${rec.name}</title>
+<style>
+  body { font-family: Georgia, 'Times New Roman', serif; color: #111827; max-width: 820px; margin: 0 auto; padding: 32px; font-size: 13px; }
+  @media print { body { padding: 16px; } }
+  h1, h2, h3 { font-family: Georgia, serif; }
+</style></head><body>
+
+<div style="background:linear-gradient(135deg,#0B1D3A,#1E3F7A);color:#fff;padding:28px 28px 24px;border-radius:12px;margin-bottom:24px">
+  <div style="font-size:10px;letter-spacing:2px;opacity:.65;margin-bottom:6px;text-transform:uppercase">Confidential — Criminal Investigation Record</div>
+  <h1 style="margin:0 0 4px;font-size:26px;font-weight:700">Forensic Interview Report</h1>
+  <div style="opacity:.75;font-size:12px">${rec.caseId} &nbsp;·&nbsp; Generated ${now}</div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px">
+  <div style="border:1px solid #E5E7EB;border-radius:8px;padding:16px">
+    <div style="font-size:9px;color:#6B7280;letter-spacing:1px;text-transform:uppercase;margin-bottom:5px">Subject</div>
+    <div style="font-size:20px;font-weight:700">${rec.name}</div>
+    <div style="color:#6B7280;font-size:12px;margin-top:2px">${rec.role}</div>
+    <div style="color:#9CA3AF;font-size:11px;margin-top:4px">Session: ${new Date(rec.startedAt).toLocaleString('en-IN')}</div>
+  </div>
+  <div style="border:1px solid #E5E7EB;border-radius:8px;padding:16px">
+    <div style="font-size:9px;color:#6B7280;letter-spacing:1px;text-transform:uppercase;margin-bottom:5px">Interview statistics</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+      <div><div style="font-size:22px;font-weight:700;color:#2563EB">${ans}/${QUESTIONS.length}</div><div style="font-size:10px;color:#6B7280">Questions answered</div></div>
+      <div><div style="font-size:22px;font-weight:700;color:#E63946">${contradictions}</div><div style="font-size:10px;color:#6B7280">Contradictions</div></div>
+      <div><div style="font-size:22px;font-weight:700;color:#F4811F">${evasions}</div><div style="font-size:10px;color:#6B7280">Evasions</div></div>
+      <div><div style="font-size:22px;font-weight:700;color:#0B9E6A">${clear}</div><div style="font-size:10px;color:#6B7280">Clear answers</div></div>
+    </div>
+  </div>
+</div>
+
+${rec.analysisResult ? `<div style="background:#FFFBEB;border:1.5px solid #FCD34D;border-radius:8px;padding:20px;margin-bottom:22px;page-break-inside:avoid">
+  <div style="font-size:10px;color:#92400E;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:10px">⚖ AI Forensic Behavioural Analysis</div>
+  <div style="font-size:12px;color:#1C1917;line-height:1.85;white-space:pre-wrap">${rec.analysisResult}</div>
+</div>` : '<div style="background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:14px;margin-bottom:22px;font-size:12px;color:#92400E">⚠ Analysis not yet generated — return to the dashboard and run AI analysis before exporting for a complete report.</div>'}
+
+<div style="font-size:9px;color:#6B7280;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:14px;padding-top:6px;border-top:2px solid #E5E7EB">Full Question &amp; Answer Record</div>
+${qRows}
+
+<div style="margin-top:36px;padding-top:14px;border-top:1px solid #E5E7EB;font-size:10px;color:#9CA3AF;text-align:center;line-height:1.6">
+  This document is strictly confidential and intended solely for authorised investigation personnel.<br>
+  Unauthorised disclosure or reproduction may constitute a criminal offence under applicable law.<br>
+  Report generated: ${now}
+</div>
+</body></html>`;
+}
+
+function exportPDF() { exportPDFFor(resultsId); }
+
+function exportPDFFor(id) {
+  const rec = getRecord(id); if (!rec) return;
+  const html = buildPDFHTML(rec);
+  const w = window.open('', '_blank');
+  if (!w) { alert('Please allow popups in your browser to export the PDF.'); return; }
+  w.document.write(html);
+  w.document.close();
+  setTimeout(() => { w.focus(); w.print(); }, 700);
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+document.getElementById('inp-name').addEventListener('keydown', e => { if (e.key==='Enter') document.getElementById('inp-role').focus(); });
+document.getElementById('inp-role').addEventListener('keydown', e => { if (e.key==='Enter') document.getElementById('inp-caseid').focus(); });
+document.getElementById('inp-caseid').addEventListener('keydown', e => { if (e.key==='Enter') startInterview(); });
+refreshHome();
+</script>
+</body>
+</html>
