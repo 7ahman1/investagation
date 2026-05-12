@@ -1054,18 +1054,14 @@ Produce a comprehensive forensic analysis with these numbered sections:
 Rules: Be clinical and evidence-anchored. Clearly distinguish confirmed fact from inference. Do not hedge where the evidence is clear.`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('/api/analyse', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }]
-      })
+      body: JSON.stringify({ prompt })
     });
+    if (!res.ok) throw new Error('Analysis request failed');
     const data = await res.json();
-    const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
-    rec.analysisResult = text;
+    rec.analysisResult = data.text;
     rec.analysisRunAt = new Date().toISOString();
   } catch(e) {
     rec.analysisResult = 'Analysis failed — connection error. Please check your connection and try again.';

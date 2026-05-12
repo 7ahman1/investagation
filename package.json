@@ -1,0 +1,9 @@
+{
+  "name": "forensic-interview-system",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.52.0",
+    "@netlify/functions": "^3.0.0"
+  }
+}
