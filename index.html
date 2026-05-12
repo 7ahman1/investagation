@@ -449,7 +449,7 @@ body {
         </button>
       </div>
       <div style="margin-top:10px;font-size:11px;color:var(--text3)">
-        * Required fields. All data is stored in this session only and will not be transmitted until you run analysis.
+        * Required fields. All data is securely stored in the database and persists across sessions.
       </div>
     </div>
   </div>
@@ -631,13 +631,21 @@ const FLAGS = [
 // ═══════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════
-let DB = [];           // Array of records
+let DB = [];           // Array of records (synced from database)
 let activeId = null;   // Current record id
 let activeTopic = 'ALL';
 let resultsId = null;  // Which record is shown in results
+let _saveQueue = {};   // debounce timers per question
 
 function getRecord(id) { return DB.find(r => r.id === id); }
 function getActive() { return getRecord(activeId); }
+
+async function loadDB() {
+  try {
+    const res = await fetch('/api/interviews');
+    if (res.ok) DB = await res.json();
+  } catch(e) { console.error('Failed to load interviews', e); }
+}
 
 // ═══════════════════════════════════════════════════════
 // NAVIGATION
@@ -647,7 +655,7 @@ function showScreen(name) {
   document.getElementById('screen-' + name).classList.add('active');
 }
 
-function goHome() { refreshHome(); showScreen('home'); }
+async function goHome() { await loadDB(); refreshHome(); showScreen('home'); }
 
 function goInterview() {
   if (!activeId) return;
@@ -722,40 +730,50 @@ function openResults(id) {
   showScreen('results');
 }
 
-function deleteRecord(id) {
+async function deleteRecord(id) {
   if (!confirm('Delete this interview record? This cannot be undone.')) return;
-  DB = DB.filter(r => r.id !== id);
-  refreshHome();
+  try {
+    await fetch(`/api/interviews/${id}`, { method: 'DELETE' });
+    DB = DB.filter(r => r.id !== id);
+    refreshHome();
+  } catch(e) {
+    alert('Failed to delete record.');
+    console.error(e);
+  }
 }
 
 // ═══════════════════════════════════════════════════════
 // START INTERVIEW
 // ═══════════════════════════════════════════════════════
-function startInterview() {
+async function startInterview() {
   const name = document.getElementById('inp-name').value.trim();
   const role = document.getElementById('inp-role').value.trim() || 'Staff';
   const caseId = document.getElementById('inp-caseid').value.trim();
   if (!name || !caseId) { alert('Please enter the staff member\'s name and case ID.'); return; }
 
-  const rec = {
-    id: Date.now(),
-    name, role, caseId,
-    startedAt: new Date().toISOString(),
-    answers: {},
-    analysisResult: null,
-    analysisRunAt: null,
-  };
-  DB.push(rec);
-  activeId = rec.id;
-  activeTopic = 'ALL';
-  document.getElementById('inp-name').value = '';
-  document.getElementById('inp-role').value = '';
-  document.getElementById('inp-caseid').value = '';
+  try {
+    const res = await fetch('/api/interviews', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, role, caseId })
+    });
+    if (!res.ok) throw new Error('Failed to create interview');
+    const rec = await res.json();
+    DB.push(rec);
+    activeId = rec.id;
+    activeTopic = 'ALL';
+    document.getElementById('inp-name').value = '';
+    document.getElementById('inp-role').value = '';
+    document.getElementById('inp-caseid').value = '';
 
-  renderInterviewHeader();
-  renderSidebar();
-  renderQuestions();
-  showScreen('interview');
+    renderInterviewHeader();
+    renderSidebar();
+    renderQuestions();
+    showScreen('interview');
+  } catch(e) {
+    alert('Failed to create interview session. Please try again.');
+    console.error(e);
+  }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -887,6 +905,16 @@ function saveAnswer(qid) {
   const flag = rec.answers[qid].flag || '';
   card.classList.toggle('answered', hasAns && !flag);
   updateProgress();
+
+  // Debounced save to database
+  clearTimeout(_saveQueue[qid]);
+  _saveQueue[qid] = setTimeout(() => {
+    fetch(`/api/interviews/${rec.id}/answers`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ questionId: qid, text: val, flag: rec.answers[qid].flag || null })
+    }).catch(e => console.error('Failed to save answer', e));
+  }, 500);
 }
 
 function toggleFlag(btn) {
@@ -935,6 +963,13 @@ function toggleFlag(btn) {
     badges.appendChild(span);
   }
   updateProgress();
+
+  // Persist flag to database
+  fetch(`/api/interviews/${rec.id}/answers`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ questionId: qid, text: rec.answers[qid].text || null, flag: rec.answers[qid].flag || null })
+  }).catch(e => console.error('Failed to save flag', e));
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1054,19 +1089,21 @@ Produce a comprehensive forensic analysis with these numbered sections:
 Rules: Be clinical and evidence-anchored. Clearly distinguish confirmed fact from inference. Do not hedge where the evidence is clear.`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('/api/analyse', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }]
-      })
+      body: JSON.stringify({ prompt })
     });
+    if (!res.ok) throw new Error('Analysis request failed');
     const data = await res.json();
-    const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
-    rec.analysisResult = text;
+    rec.analysisResult = data.text;
     rec.analysisRunAt = new Date().toISOString();
+    // Persist analysis to database
+    await fetch(`/api/interviews/${rec.id}/analysis`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ analysisResult: rec.analysisResult })
+    });
   } catch(e) {
     rec.analysisResult = 'Analysis failed — connection error. Please check your connection and try again.';
     rec.analysisRunAt = new Date().toISOString();
@@ -1173,7 +1210,7 @@ function exportPDFFor(id) {
 document.getElementById('inp-name').addEventListener('keydown', e => { if (e.key==='Enter') document.getElementById('inp-role').focus(); });
 document.getElementById('inp-role').addEventListener('keydown', e => { if (e.key==='Enter') document.getElementById('inp-caseid').focus(); });
 document.getElementById('inp-caseid').addEventListener('keydown', e => { if (e.key==='Enter') startInterview(); });
-refreshHome();
+loadDB().then(() => refreshHome());
 </script>
 </body>
 </html>
